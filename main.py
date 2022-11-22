@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     fix_seed(args.seed)
 
-    config = vars(args)
+    config = vars(args)  # convert to dictionary
 
     print("Loading Dataset ...")
     with open("../인공지능 공부/NeuroMarketing/data/feature.pkl", "rb") as f:
