@@ -1,7 +1,6 @@
 # NeruroMarketing with Graph Neural Network
 
 * Graph Attention Network (GAT)
-* Graph Convolution Network (GCN)  
   
   
   
