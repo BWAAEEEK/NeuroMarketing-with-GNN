@@ -30,11 +30,12 @@ class Trainer:
         avg_loss = 0.0
         for i, data in data_iter:
             data = {key: value.to(self.device) for key, value in data.items()}
-
+            self.optim.zero_grad()
             output = self.model(data["feature"], data["edge_list"])
 
             loss = self.criterion(output.to(self.device), data["label"])
-
+            loss.backward()
+            self.optim.step()
             avg_loss += loss.item()
 
             post_fix = {"avg_loss": avg_loss / (i + 1), "cur_loss": loss.item()}
