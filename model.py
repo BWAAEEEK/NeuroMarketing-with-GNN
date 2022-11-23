@@ -24,19 +24,29 @@ class GAT(nn.Module):
 
     def forward(self, feature, edge_list):
         output = torch.zeros((feature.shape[0], 1))
+        attn_score_mat = torch.zeros((feature.shape[0], 14, 14))
         for idx in range(feature.shape[0]):
-            data = Data(x=feature[idx, :, :], edge_index=edge_list[idx].t().contiguous())
+            attn_score = torch.zeros((14, 14))
+            data = Data(x=feature[idx, :, :], edge_index=edge_list[idx].t())
             # print(feature[idx, :, :].shape)
             # print(edge_list[idx, :, :].shape)
             x = self.conv1(data.x, data.edge_index)
+            x = x
             x = F.relu(x)
             x = self.dropout(x)
-            x = self.conv2(x, data.edge_index)
+            x = self.conv2(x, data.edge_index, return_attention_weights=True)
+            attn_idx, attn_value = x[1][0], x[1][1]
+            x = x[0]
             x = x.view(x.shape[0] * x.shape[1])    # (Batch, hidden * 7)
+
+            attn_idx = attn_idx.t()
+            for i, seq in enumerate(attn_idx):
+                attn_score[seq[0]][seq[1]] = attn_value[i].item()
             x = self.linear(x)
             x = self.pred(x)
 
             x = torch.sigmoid(x)
             output[idx] = x
+            attn_score_mat[idx] = attn_score
 
-        return output
+        return output, attn_score_mat

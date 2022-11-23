@@ -4,6 +4,7 @@ import pickle
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
+from util import EarlyStopping
 
 import networkx as nx
 from model import GAT
@@ -12,6 +13,7 @@ from dataset import CustomDataset
 import numpy as np
 import random
 import time
+
 
 def fix_seed(seed):
     torch.manual_seed(seed)
@@ -33,6 +35,7 @@ if __name__ == "__main__":
 
     args.add_argument("--batch_size", default=32, type=int)
     args.add_argument("--split", default=0.8, type=float)
+    args.add_argument("--patience", default=10, type=int)
     args.add_argument("--epoch", default=100, type=int)
     args.add_argument("--seed", default=42, type=int)
 
@@ -78,18 +81,31 @@ if __name__ == "__main__":
                                                                        config["batch_size"],
                                                                        config["dropout"]))
 
+    loss_list = []
+    model_check_point = 0
+    count = 0
     for epoch in range(config["epoch"]):
         if torch.cuda.is_available():
             torch.cuda.synchronize()
 
-        loss = trainer.train(epoch)
+        train_loss = trainer.train(epoch, run="train")
+        val_loss = trainer.train(epoch, run="val")
+        loss_list.append(val_loss)
+
+        if loss_list[-2] < loss_list[-1]:
+            count += 1
+
         val_acc = trainer.eval(epoch, run="val")
 
-        writer.add_scalar("loss", loss, epoch)
+        writer.add_scalar("train_loss", train_loss, epoch)
+        writer.add_scalar("val_loss", val_loss, epoch)
         writer.add_scalar("val_acc", val_acc, epoch)
         if torch.cuda.is_available():
             torch.cuda.synchronize()
 
+        if count == config["paitience"]:
+            print("Early Stopping")
+            break
     test_acc = trainer.eval(config["epoch"], "test")
     print('\n\n')
     print(f"|     Test Dataset Accuracy {test_acc}     |")

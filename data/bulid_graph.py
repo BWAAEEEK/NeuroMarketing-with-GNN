@@ -18,18 +18,9 @@ edge_list = []
 
 for node1 in node_list:
     for node2 in node_list:
-        if node1 == node2:
-            continue
         edge_list.append((vocab["stoi"][node1], vocab["stoi"][node2]))
 
 graph.add_edges_from(edge_list)
 
-nx.draw(graph, with_labels=True)
-
-plt.show()
-
-with open("vocab.pkl", "wb") as f:
-    pickle.dump(vocab, f)
-
-with open("brain_graph.pkl", "wb") as f:
+with open("./brain_graph.pkl", "wb") as f:
     pickle.dump(graph, f)
