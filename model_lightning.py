@@ -112,13 +112,13 @@ class GAT(LightningModule):
         self.test_dataset = CustomDataset(data=data, vocab=vocab, graph=graph, run="test")
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.config["batch_size"], shuffle=True)
+        return DataLoader(self.train_dataset, batch_size=self.config["batch_size"], shuffle=True, num_workers=self.config["num_workers"])
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.config["batch_size"], shuffle=True)
+        return DataLoader(self.val_dataset, batch_size=self.config["batch_size"], shuffle=True, num_workers=self.config["num_workers"])
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.config["batch_size"])
+        return DataLoader(self.test_dataset, batch_size=self.config["batch_size"], num_workers=self.config["num_workers"])
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.config["learning_rate"])
