@@ -7,7 +7,6 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 import numpy as np
 import random
-import time
 
 
 def fix_seed(seed):
@@ -35,6 +34,7 @@ if __name__ == "__main__":
 
     args.add_argument("--gpus", default=1, type=int)
     args.add_argument("--seed", default=42, type=int)
+    args.add_argument("--num_workers", default=4, type=int)
 
     args = args.parse_args()
 
@@ -57,7 +57,8 @@ if __name__ == "__main__":
     early_stopping = EarlyStopping("val_loss", patience=config["patience"])
     checkpoint = ModelCheckpoint(dirpath="./output",
                                  filename="{epoch}_{val_acc:.2f}",
-                                 monitor="val_acc")
+                                 monitor="val_acc",
+                                 mode="max")
     trainer = Trainer(gpus=config["gpus"], accelerator="gpu", max_epochs=config["epoch"], logger=logger,
                       callbacks=[early_stopping, checkpoint], log_every_n_steps=1)
 
