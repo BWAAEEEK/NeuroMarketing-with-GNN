@@ -98,13 +98,13 @@ class GAT(LightningModule):
 
     def prepare_data(self):
         print("Loading Dataset ...")
-        with open("../인공지능 공부/NeuroMarketing/data/feature.pkl", "rb") as f:
+        with open("./data/feature.pkl", "rb") as f:
             data = pickle.load(f)
 
-        with open("../인공지능 공부/NeuroMarketing/data/vocab.pkl", "rb") as f:
+        with open("./data/vocab.pkl", "rb") as f:
             vocab = pickle.load(f)
 
-        with open("../인공지능 공부/NeuroMarketing/data/brain_graph.pkl", "rb") as f:
+        with open("./data/brain_graph.pkl", "rb") as f:
             graph: nx.Graph = pickle.load(f)
 
         self.train_dataset = CustomDataset(data=data, vocab=vocab, graph=graph, run="train")
