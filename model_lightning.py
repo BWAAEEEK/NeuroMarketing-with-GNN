@@ -80,7 +80,7 @@ class GAT(LightningModule):
         # cal loss
         loss = nn.BCELoss()(output.cuda(), val_batch["label"])
 
-        # cal metrics for check the performance of model
+        # cal metrics for checking the performance of model
         acc = top_k_accuracy_score(val_batch["label"].cpu().numpy(), output.cpu().numpy(), k=1, labels=[0, 1])
 
         return {"val_loss": loss, "val_acc": torch.tensor(acc)}
