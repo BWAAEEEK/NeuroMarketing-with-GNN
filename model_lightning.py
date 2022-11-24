@@ -122,3 +122,4 @@ class GAT(LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.config["learning_rate"])
+    
