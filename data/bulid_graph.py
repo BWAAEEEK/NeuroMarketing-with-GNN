@@ -24,3 +24,6 @@ graph.add_edges_from(edge_list)
 
 with open("./brain_graph.pkl", "wb") as f:
     pickle.dump(graph, f)
+
+with open("./vocab.pkl", "wb") as f:
+    pickle.dump(vocab, f)
