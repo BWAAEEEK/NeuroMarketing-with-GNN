@@ -8,12 +8,19 @@ import pickle
 import networkx as nx
 from dataset import CustomDataset
 from torch.utils.data import DataLoader
-from sklearn.metrics import top_k_accuracy_score
+from torchmetrics.classification import BinaryAccuracy
+
 
 class GAT(LightningModule):
     def __init__(self, config: dict):
         super(GAT, self).__init__()
         self.dropout = nn.Dropout(p=config["dropout"])
+
+        self.metric = BinaryAccuracy().to(self.device)
+
+        self.train_loss = []
+        self.val_loss = []
+        self.val_acc = []
 
         self.conv1 = GATConv(in_channels=config["num_feature"],
                              out_channels=config["hidden"],
@@ -36,8 +43,7 @@ class GAT(LightningModule):
         for idx in range(feature.shape[0]):
             attn_score = torch.zeros((14, 14))
             data = Data(x=feature[idx, :, :], edge_index=edge_list[idx].t())
-            # print(feature[idx, :, :].shape)
-            # print(edge_list[idx, :, :].shape)
+
             x = self.conv1(data.x, data.edge_index)
             x = x
             x = F.relu(x)
@@ -57,21 +63,25 @@ class GAT(LightningModule):
             output[idx] = x
             attn_score_mat[idx] = attn_score
 
-        return output, attn_score_mat
+        return output.to(self.device), attn_score_mat
 
     def training_step(self, train_batch, batch_idx):
         output = self.forward(train_batch["feature"], train_batch["edge_list"])
         output = output[0]
-        loss = nn.BCELoss()(output.cuda(), train_batch["label"].cuda())
+        loss = nn.BCELoss()(output, train_batch["label"])
 
-        logs = {"train_loss": loss}
-        return {"loss": loss, "log": logs}
+        self.train_loss.append(loss)
 
-    def training_epoch_end(self, outputs):
-        avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
+        self.log("train_step_loss", loss, prog_bar=True)
+
+        return loss
+
+    def on_train_epoch_end(self):
+        avg_loss = torch.stack(self.train_loss).mean()
 
         self.log("train_loss", avg_loss)
 
+        self.train_loss.clear()
 
     def validation_step(self, val_batch, batch_idx):
         output = self.forward(val_batch["feature"], val_batch["edge_list"])
@@ -81,20 +91,22 @@ class GAT(LightningModule):
         loss = nn.BCELoss()(output.cuda(), val_batch["label"])
 
         # cal metrics for checking the performance of model
-        acc = top_k_accuracy_score(val_batch["label"].cpu().numpy(), output.cpu().numpy(), k=1, labels=[0, 1])
+        acc = self.metric(val_batch["label"], output > 0.5)
 
-        return {"val_loss": loss, "val_acc": torch.tensor(acc)}
+        self.val_loss.append(loss)
+        self.val_acc.append(acc)
 
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
-        avg_acc = torch.stack([x["val_acc"] for x in outputs]).mean()
+        return loss
 
-        tensorboard_logs = {"val_loss": avg_loss}
+    def on_validation_epoch_end(self):
+        avg_loss = torch.stack(self.val_loss).mean()
+        avg_acc = torch.stack(self.val_acc).mean()
 
-        self.log("val_loss", avg_loss)
-        self.log("val_acc", avg_acc)
+        self.log("val_loss", avg_loss, prog_bar=True)
+        self.log("val_acc", avg_acc, prog_bar=True)
 
-        return {"avg_val_loss": avg_loss, "log": tensorboard_logs}
+        self.val_loss.clear()
+        self.val_acc.clear()
 
     def prepare_data(self):
         print("Loading Dataset ...")
